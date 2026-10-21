@@ -1,6 +1,6 @@
 import json
 from datetime import date
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 
 class CheckoutError(Exception):
@@ -15,6 +15,8 @@ CATALOGO = {
     "remera": Decimal("11999.50"),
     "campera": Decimal("47999.99"),
 }
+
+CENTAVO = Decimal("0.01")
 
 TALLES = ["XS", "S", "M", "L", "XL", "XXL"]
 
@@ -52,7 +54,7 @@ def calcular_subtotal(carrito):
             continue
         subtotal += precio * item["cantidad"]
 
-    return round(subtotal, 2)
+    return subtotal.quantize(CENTAVO, ROUND_HALF_UP)
 
 
 def calcular_descuento(subtotal, cantidad_prendas, cupon=None, fecha=date.today()):
@@ -82,7 +84,7 @@ def calcular_descuento(subtotal, cantidad_prendas, cupon=None, fecha=date.today(
                 )
             descuento += datos["valor"]
 
-    return round(descuento, 2)
+    return descuento.quantize(CENTAVO, ROUND_HALF_UP)
 
 
 def calcular_envio(subtotal, zona):
@@ -115,6 +117,6 @@ def calcular_total(carrito, zona, cupon=None, fecha=date.today()):
         "subtotal": subtotal,
         "descuento": descuento,
         "envio": envio,
-        "total": round(total, 2),
+        "total": total.quantize(CENTAVO, ROUND_HALF_UP),
     }
     return resultado
