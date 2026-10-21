@@ -102,3 +102,17 @@ def test_un_talle_con_espacios_alrededor_es_valido():
     subtotal = calcular_subtotal(carrito)
 
     assert subtotal == Decimal("24999.90")
+
+
+@pytest.mark.parametrize(
+    "invalido",
+    [
+        item("buzo", None, 1),
+        item("buzo", 2, 1),
+        {"producto": "buzo", "cantidad": 1},
+    ],
+)
+def test_un_talle_de_otro_tipo_o_ausente_es_invalido(invalido):
+    codigo = codigo_de_error(validar_item, invalido)
+
+    assert codigo == "TALLE_INVALIDO"
