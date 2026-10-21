@@ -73,3 +73,16 @@ def test_validar_item_informa_el_producto_antes_que_el_talle():
     codigo = codigo_de_error(validar_item, invalido)
 
     assert codigo == "PRODUCTO_INEXISTENTE"
+
+
+@pytest.mark.parametrize(
+    "invalido",
+    [
+        item(["buzo"], "M", 1),
+        {"talle": "M", "cantidad": 1},
+    ],
+)
+def test_un_producto_de_otro_tipo_o_ausente_es_inexistente(invalido):
+    codigo = codigo_de_error(validar_item, invalido)
+
+    assert codigo == "PRODUCTO_INEXISTENTE"
