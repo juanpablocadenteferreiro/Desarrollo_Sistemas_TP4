@@ -396,3 +396,68 @@ Found 5 errors.
 - Qué pasa: la regla "el precio sale del catálogo" está escrita dos veces, por eso H-03 y H-31 son la misma falla repetida. Además, como `CATALOGO[item["producto"]]` se evalúa siempre, un producto inexistente lanza `KeyError: 'pantalon'` en lugar de `PRODUCTO_INEXISTENTE`.
 - Cómo la encontré: lectura del código y ejecución
 - Severidad: baja
+
+### api.py
+
+#### H-35: Los montos viajan como número JSON
+
+- Archivo y línea: api.py, línea 18 (`json.dumps(cuerpo, default=float)`)
+- Categoría: numéricos
+- Regla: R11 ("los montos viajan siempre como texto, nunca como número JSON")
+- Qué pasa: un `POST` válido devuelve `{"subtotal": 11999.5, "descuento": 0.0, "envio": 2500.0, "total": 14499.5}`; se esperaba `{"subtotal": "11999.50", "descuento": "0.00", ...}`.
+- Cómo la encontré: lectura del código y ejecución
+- Severidad: alta (el frontend vuelve a recibir `float`)
+
+#### H-36: Un error de negocio devuelve 500 con otro formato
+
+- Archivo y línea: api.py, líneas 53-54 (`except Exception` → 500 `{"error": str(e)}`)
+- Categoría: manejo de errores
+- Regla: R11 (422 con `{"error": {"code", "message"}}`; "un error nunca puede devolver 500")
+- Qué pasa: `POST` con talle `"XXXL"` devuelve `500 {"error": "Talle inválido: XXXL"}`; se esperaba `422 {"error": {"code": "TALLE_INVALIDO", "message": ...}}`. Además, por H-28, el pedido queda creado.
+- Cómo la encontré: lectura del código y ejecución
+- Severidad: alta (el frontend no puede saber qué error mostrar)
+
+#### H-37: Un JSON inválido devuelve 500
+
+- Archivo y línea: api.py, líneas 32 y 53-54
+- Categoría: manejo de errores
+- Regla: R11 (400 `JSON_INVALIDO`)
+- Qué pasa: el cuerpo `{no json` devuelve `500 {"error": "Expecting property name enclosed in double quotes..."}`; se esperaba `400 JSON_INVALIDO`.
+- Cómo la encontré: lectura del código y ejecución
+- Severidad: media
+
+#### H-38: Si falta un campo o tiene otro tipo, devuelve 500
+
+- Archivo y línea: api.py, líneas 37-39 (`datos["email"]`, `datos["carrito"]`, `datos["zona"]` sin validar)
+- Categoría: tipos
+- Regla: R11 (400 `DATOS_INCOMPLETOS`)
+- Qué pasa: un cuerpo sin `email` devuelve `500 {"error": "'email'"}` (`KeyError`); se esperaba `400 DATOS_INCOMPLETOS`.
+- Cómo la encontré: lectura del código y ejecución
+- Severidad: media
+
+#### H-39: La fecha se pasa como texto a `checkout`
+
+- Archivo y línea: api.py, línea 41 (`datos.get("fecha")`)
+- Categoría: fechas
+- Regla: R11 (la fecha viaja como texto `AAAA-MM-DD`) y sección 1 (`fecha: date | None`)
+- Qué pasa: `POST` con `"cupon": "EGRESADOS2026", "fecha": "2026-11-01"` devuelve `500 {"error": "'<' not supported between instances of 'str' and 'datetime.date'"}`; se esperaba 201 con descuento `"1799.93"`. Cada capa probada por separado "anda": la falla está en el paso de información entre `api.py` y `checkout.py`.
+- Cómo la encontré: ejecución del ejemplo de R11
+- Severidad: alta (el ejemplo oficial de la API no funciona)
+
+#### H-40: Una fecha mal formada no da `FECHA_INVALIDA`
+
+- Archivo y línea: api.py, línea 41
+- Categoría: fechas
+- Regla: R11 (400 `FECHA_INVALIDA`)
+- Qué pasa: `POST` sin cupón con `"fecha": "30/11/2026"` devuelve 201 y crea el pedido (la fecha ni se mira); con cupón, devuelve 500. Se esperaba `400 FECHA_INVALIDA` en ambos casos.
+- Cómo la encontré: ejecución
+- Severidad: media
+
+#### H-41: `GET` de un pedido inexistente devuelve `200 null`
+
+- Archivo y línea: api.py, líneas 63-66
+- Categoría: manejo de errores
+- Regla: R11 (404 `PEDIDO_INEXISTENTE`)
+- Qué pasa: `GET /api/v1/pedidos/999` devuelve `200 null`; se esperaba `404 {"error": {"code": "PEDIDO_INEXISTENTE", ...}}`. Además, si `obtener_pedido` lanza una excepción, la conexión no se cierra (`con.close()` no está en un `finally`, líneas 44 y 65).
+- Cómo la encontré: lectura del código y ejecución
+- Severidad: media (el frontend recibe "éxito" sin datos)
