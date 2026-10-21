@@ -461,3 +461,65 @@ Found 5 errors.
 - Qué pasa: `GET /api/v1/pedidos/999` devuelve `200 null`; se esperaba `404 {"error": {"code": "PEDIDO_INEXISTENTE", ...}}`. Además, si `obtener_pedido` lanza una excepción, la conexión no se cierra (`con.close()` no está en un `finally`, líneas 44 y 65).
 - Cómo la encontré: lectura del código y ejecución
 - Severidad: media (el frontend recibe "éxito" sin datos)
+
+## 3. Tabla de todas las fallas, de la más grave a la menos grave
+
+| # | Severidad | Falla | Archivo y línea | Categoría | Regla |
+|---|---|---|---|---|---|
+| 1 | alta | H-32 Inyección SQL en `pedidos_de` | pedidos.py:107 | seguridad | R10 |
+| 2 | alta | H-03 Se usa el precio del cliente | checkout.py:49 | seguridad | R1 |
+| 3 | alta | H-31 `precio_unitario` del cliente | pedidos.py:64 | seguridad | R10 |
+| 4 | alta | H-17 Cupón secreto `DEBUG100` | checkout.py:23 | seguridad | R6 |
+| 5 | alta | H-29 Falta el `commit` final | pedidos.py:52-71 | efectos laterales | R10 |
+| 6 | alta | H-28 Pedido guardado antes de validar | pedidos.py:39-48 | efectos laterales | R10 |
+| 7 | alta | H-30 Montos `REAL` en la base | pedidos.py:12-15, 55-58, 88-91 | numéricos | R10, R7 |
+| 8 | alta | H-01 Dinero en `float` | checkout.py:12-31 | numéricos | R7 |
+| 9 | alta | H-02 Redondeo no comercial | checkout.py:54, 84, 117 | numéricos | R7 |
+| 10 | alta | H-18 Descuento mayor que el subtotal | checkout.py:57-84 | lógica y límites | R6 |
+| 11 | alta | H-14 Cupón y cantidad se acumulan | checkout.py:61, 74, 82 | lógica y límites | R6 |
+| 12 | alta | H-04 Producto inexistente salteado | checkout.py:48-51 | manejo de errores | R1 |
+| 13 | alta | H-07 Se modifica el carrito | checkout.py:35 | efectos laterales | R4 |
+| 14 | alta | H-16 Cupón vacío da error | checkout.py:63-67 | strings | R6 |
+| 15 | alta | H-20 `fecha=None` explota | checkout.py:57, 72, 102 | fechas | R6 |
+| 16 | alta | H-39 Fecha como texto en la API | api.py:41 | fechas | R11 |
+| 17 | alta | H-23 Método inventado `dict_keys.join` | checkout.py:93 | alucinación | R8 |
+| 18 | alta | H-36 Error de negocio → 500 | api.py:53-54 | manejo de errores | R11 |
+| 19 | alta | H-35 Montos como número JSON | api.py:18 | numéricos | R11 |
+| 20 | media | H-13 `> 5` prendas | checkout.py:60 | lógica y límites | R5 |
+| 21 | media | H-22 Envío sobre el subtotal sin descuento | checkout.py:110 | lógica y límites | R8 |
+| 22 | media | H-19 Vencimiento con `<` | checkout.py:72 | lógica y límites | R6 |
+| 23 | media | H-21 `date.today()` por defecto | checkout.py:57, 102 | fechas | R6 |
+| 24 | media | H-10 Cantidad 10 rechazada | checkout.py:40 | lógica y límites | R3 |
+| 25 | media | H-12 Carrito vacío aceptado | checkout.py:44-54 | lógica y límites | R4 |
+| 26 | media | H-05 No valida el producto en orden | checkout.py:34-41 | lógica y límites | R1, sección 3 |
+| 27 | media | H-11 Cantidad no entera | checkout.py:40 | tipos | R3 |
+| 28 | media | H-15 Cupón en minúscula rechazado | checkout.py:64 | strings | R6 |
+| 29 | media | H-08 Talle con espacios rechazado | checkout.py:35 | strings | R2 |
+| 30 | media | H-06 Producto de otro tipo | checkout.py:48-51 | tipos | R1 |
+| 31 | media | H-09 Talle de otro tipo | checkout.py:35 | tipos | R2 |
+| 32 | media | H-25 Cupón de otro tipo | checkout.py:64 | tipos | R6 |
+| 33 | media | H-40 Fecha mal formada aceptada | api.py:41 | fechas | R11 |
+| 34 | media | H-38 Datos incompletos → 500 | api.py:37-39 | tipos | R11 |
+| 35 | media | H-37 JSON inválido → 500 | api.py:32, 53-54 | manejo de errores | R11 |
+| 36 | media | H-41 `GET` inexistente → 200 | api.py:63-66 | manejo de errores | R11 |
+| 37 | baja | H-33 `OverflowError` con id enorme | pedidos.py:75 | manejo de errores | R10 |
+| 38 | baja | H-24 Zona de otro tipo | checkout.py:88 | tipos | R8 |
+| 39 | baja | H-26 Parámetro fuera de contrato | checkout.py:87 | code smell | sección 1 |
+| 40 | baja | H-34 Regla duplicada entre capas | pedidos.py:4, 64 | code smell | - |
+| 41 | baja | H-27 Code smells varios | checkout.py:1, 40, 60, 63, 96 | code smell | - |
+
+### Resumen por categoría
+
+| Categoría | Cantidad | Hallazgos |
+|---|:-:|---|
+| lógica y límites | 8 | H-05, H-10, H-12, H-13, H-14, H-18, H-19, H-22 |
+| numéricos | 4 | H-01, H-02, H-30, H-35 |
+| strings | 3 | H-08, H-15, H-16 |
+| efectos laterales | 3 | H-07, H-28, H-29 |
+| fechas | 4 | H-20, H-21, H-39, H-40 |
+| alucinación | 1 | H-23 |
+| seguridad | 4 | H-03, H-17, H-31, H-32 |
+| manejo de errores | 5 | H-04, H-33, H-36, H-37, H-41 |
+| tipos | 6 | H-06, H-09, H-11, H-24, H-25, H-38 |
+| code smell | 3 | H-26, H-27, H-34 |
+| Total | 41 | 27 en `checkout.py`, 7 en `pedidos.py`, 7 en `api.py` |
