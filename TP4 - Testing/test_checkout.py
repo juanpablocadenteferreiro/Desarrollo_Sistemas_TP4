@@ -86,3 +86,11 @@ def test_un_producto_de_otro_tipo_o_ausente_es_inexistente(invalido):
     codigo = codigo_de_error(validar_item, invalido)
 
     assert codigo == "PRODUCTO_INEXISTENTE"
+
+
+def test_calcular_total_no_modifica_el_carrito():
+    carrito = [item("buzo", "m", 2), item("remera", "l", 1)]
+
+    calcular_total(carrito, "CABA")
+
+    assert carrito == [item("buzo", "m", 2), item("remera", "l", 1)]
