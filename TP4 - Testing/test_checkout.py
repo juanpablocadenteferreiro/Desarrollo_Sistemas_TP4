@@ -131,3 +131,12 @@ def test_las_cantidades_1_y_10_son_validas(cantidad, esperado):
     subtotal = calcular_subtotal(carrito)
 
     assert subtotal == esperado
+
+
+@pytest.mark.parametrize("cantidad", [2.0, 1.5, True, "2", None])
+def test_una_cantidad_que_no_es_entera_es_invalida(cantidad):
+    invalido = item("remera", "M", cantidad)
+
+    codigo = codigo_de_error(validar_item, invalido)
+
+    assert codigo == "CANTIDAD_INVALIDA"
