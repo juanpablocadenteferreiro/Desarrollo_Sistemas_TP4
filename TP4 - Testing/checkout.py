@@ -44,7 +44,9 @@ def validar_item(item):
     if not isinstance(talle, str) or talle.strip().upper() not in TALLES:
         raise CheckoutError("TALLE_INVALIDO", f"Talle inválido: {talle}")
 
-    if not (1 <= item["cantidad"] <= 10):
+    cantidad = item.get("cantidad")
+
+    if type(cantidad) is not int or not (1 <= cantidad <= 10):
         raise CheckoutError("CANTIDAD_INVALIDA", "La cantidad debe estar entre 1 y 10")
 
 
