@@ -41,3 +41,11 @@ def test_el_ejemplo_de_la_especificacion_devuelve_los_importes_en_decimal():
         "total": Decimal("52499.80"),
     }
     assert all(type(valor) is Decimal for valor in resultado.values())
+
+
+def test_el_15_por_ciento_redondea_el_medio_centavo_hacia_arriba():
+    subtotal = Decimal("11999.50")
+
+    descuento = calcular_descuento(subtotal, 1, "EGRESADOS2026", HOY_VIGENTE)
+
+    assert descuento == Decimal("1799.93")
