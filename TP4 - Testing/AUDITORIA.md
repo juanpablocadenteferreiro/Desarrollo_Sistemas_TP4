@@ -331,3 +331,68 @@ Found 5 errors.
 - Qué pasa: no rompe hoy, pero deja código muerto y esconde reglas de negocio en literales.
 - Cómo la encontré: linter (F401, E711) y lectura del código
 - Severidad: baja
+
+### pedidos.py
+
+#### H-28: El pedido se guarda y se confirma antes de calcular el total
+
+- Archivo y línea: pedidos.py, líneas 39-48 (`INSERT` + `con.commit()` antes de `calcular_total`, línea 50)
+- Categoría: efectos laterales
+- Regla: R10 ("si eso lanza `CheckoutError`… no queda nada guardado")
+- Qué pasa: `guardar_pedido(con, "a@a.com", [item("remera", "XXXL", 1)], "CABA")` lanza `TALLE_INVALIDO`, pero otra conexión cuenta 1 pedido con montos en 0; se esperaba 0 pedidos y 0 ítems.
+- Cómo la encontré: lectura del código y ejecución contando filas desde otra conexión
+- Severidad: alta (cada intento fallido deja un pedido fantasma de $0)
+
+#### H-29: Falta el `commit` final: el pedido no es definitivo
+
+- Archivo y línea: pedidos.py, líneas 52-71 (el `UPDATE` y los `INSERT` de ítems nunca se confirman)
+- Categoría: efectos laterales
+- Regla: R10 ("cualquier otra conexión a la misma base lo ve completo, con todos sus ítems")
+- Qué pasa: después de `guardar_pedido`, la misma conexión ve el pedido completo, pero otra conexión lo ve con `subtotal`, `descuento`, `envio` y `total` en `Decimal('0')` y sin ítems.
+- Cómo la encontré: lectura del código y ejecución con dos conexiones (con una sola conexión la falla no se ve)
+- Severidad: alta (se pierden los importes y los ítems de todos los pedidos)
+
+#### H-30: Los montos se guardan como `REAL` y cambian al leerse
+
+- Archivo y línea: pedidos.py, líneas 12-15 y 23 (`REAL`), 55-58 y 68 (`float(...)`), 88-91 y 97 (`Decimal(float)`)
+- Categoría: numéricos
+- Regla: R10 ("idénticos a los que calculó `checkout`: `Decimal`, mismo valor, sin ninguna pérdida") y R7
+- Qué pasa: un descuento de 15% sobre $1 se lee como `Decimal('0.1499999999999999944488848768742172978818416595458984375')`; se esperaba exactamente el `Decimal` que devolvió `calcular_total`.
+- Cómo la encontré: lectura del esquema y ejecución comparando contra `calcular_total`
+- Severidad: alta (los montos guardados no coinciden con los cobrados)
+
+#### H-31: `precio_unitario` sale del cliente
+
+- Archivo y línea: pedidos.py, línea 64 (`item.get("precio", CATALOGO[...])`)
+- Categoría: seguridad
+- Regla: R10 ("`precio_unitario` es el precio del catálogo, nunca uno enviado por el cliente")
+- Qué pasa: con `{"producto": "remera", ..., "precio": 1}` el ítem guardado tiene `precio_unitario == Decimal('1')`; se esperaba `Decimal("11999.50")`. Aunque se corrija `checkout`, el registro queda adulterado porque es la misma falla repetida en otra capa.
+- Cómo la encontré: lectura del código
+- Severidad: alta (el comprobante muestra el precio que eligió el cliente)
+
+#### H-32: Inyección SQL en `pedidos_de`
+
+- Archivo y línea: pedidos.py, línea 107 (consulta armada con f-string)
+- Categoría: seguridad
+- Regla: R10 ("ningún valor puede alterar la consulta a la base")
+- Qué pasa: `pedidos_de(con, "x' OR '1'='1")` devuelve todos los pedidos de la base; `pedidos_de(con, "o'brien@mail.com")` lanza `OperationalError: near "brien": syntax error`. Se esperaba `[]` y los pedidos de ese email, respectivamente.
+- Cómo la encontré: lectura del código (es la única consulta que no usa parámetros `?`)
+- Severidad: alta (expone los emails, compras y montos de todos los compradores)
+
+#### H-33: `obtener_pedido` con un id fuera de rango lanza `OverflowError`
+
+- Archivo y línea: pedidos.py, línea 75
+- Categoría: manejo de errores
+- Regla: R10 ("`obtener_pedido` de un id que no existe devuelve `None`")
+- Qué pasa: `obtener_pedido(con, 1020)` lanza `OverflowError: Python int too large to convert to SQLite INTEGER`; se esperaba `None`. Por la API, `GET /api/v1/pedidos/99999999999999999999` devuelve 500.
+- Cómo la encontré: valor límite (un id más grande que el `INTEGER` de SQLite) y ejecución
+- Severidad: baja (es un caso raro, pero produce un 500)
+
+#### H-34: Regla de negocio duplicada entre capas
+
+- Archivo y línea: pedidos.py, líneas 4 y 64 (vuelve a buscar el precio en `CATALOGO` en lugar de usar lo que calculó `checkout`)
+- Categoría: code smell
+- Regla: -
+- Qué pasa: la regla "el precio sale del catálogo" está escrita dos veces, por eso H-03 y H-31 son la misma falla repetida. Además, como `CATALOGO[item["producto"]]` se evalúa siempre, un producto inexistente lanza `KeyError: 'pantalon'` en lugar de `PRODUCTO_INEXISTENTE`.
+- Cómo la encontré: lectura del código y ejecución
+- Severidad: baja
