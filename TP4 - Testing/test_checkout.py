@@ -65,3 +65,11 @@ def test_un_producto_que_no_esta_en_el_catalogo_es_inexistente():
     codigo = codigo_de_error(calcular_subtotal, carrito)
 
     assert codigo == "PRODUCTO_INEXISTENTE"
+
+
+def test_validar_item_informa_el_producto_antes_que_el_talle():
+    invalido = item("pantalon", "XXXL", 1)
+
+    codigo = codigo_de_error(validar_item, invalido)
+
+    assert codigo == "PRODUCTO_INEXISTENTE"
