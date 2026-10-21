@@ -48,11 +48,9 @@ def calcular_subtotal(carrito):
     subtotal = Decimal("0.00")
     for item in carrito:
         validar_item(item)
-        try:
-            precio = CATALOGO[item["producto"]]
-        except:
-            continue
-        subtotal += precio * item["cantidad"]
+        if item["producto"] not in CATALOGO:
+            raise CheckoutError("PRODUCTO_INEXISTENTE", f"Producto inexistente: {item['producto']}")
+        subtotal += CATALOGO[item["producto"]] * item["cantidad"]
 
     return subtotal.quantize(CENTAVO, ROUND_HALF_UP)
 
