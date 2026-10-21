@@ -147,3 +147,17 @@ def test_un_carrito_vacio_lanza_carrito_vacio(carrito):
     codigo = codigo_de_error(calcular_total, carrito, "CABA")
 
     assert codigo == "CARRITO_VACIO"
+
+
+@pytest.mark.parametrize(
+    "prendas, subtotal, esperado",
+    [
+        (4, Decimal("47998.00"), Decimal("0.00")),
+        (5, Decimal("59997.50"), Decimal("5999.75")),
+        (6, Decimal("71997.00"), Decimal("7199.70")),
+    ],
+)
+def test_desde_5_prendas_se_aplica_el_10_por_ciento(prendas, subtotal, esperado):
+    descuento = calcular_descuento(subtotal, prendas, None, HOY_VIGENTE)
+
+    assert descuento == esperado
