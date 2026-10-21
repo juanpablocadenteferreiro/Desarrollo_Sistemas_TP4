@@ -94,3 +94,11 @@ def test_calcular_total_no_modifica_el_carrito():
     calcular_total(carrito, "CABA")
 
     assert carrito == [item("buzo", "m", 2), item("remera", "l", 1)]
+
+
+def test_un_talle_con_espacios_alrededor_es_valido():
+    carrito = [item("buzo", "  M ", 1)]
+
+    subtotal = calcular_subtotal(carrito)
+
+    assert subtotal == Decimal("24999.90")
