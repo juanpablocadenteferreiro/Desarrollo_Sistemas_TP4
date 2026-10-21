@@ -140,3 +140,10 @@ def test_una_cantidad_que_no_es_entera_es_invalida(cantidad):
     codigo = codigo_de_error(validar_item, invalido)
 
     assert codigo == "CANTIDAD_INVALIDA"
+
+
+@pytest.mark.parametrize("carrito", [[], None])
+def test_un_carrito_vacio_lanza_carrito_vacio(carrito):
+    codigo = codigo_de_error(calcular_total, carrito, "CABA")
+
+    assert codigo == "CARRITO_VACIO"
