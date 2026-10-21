@@ -116,3 +116,18 @@ def test_un_talle_de_otro_tipo_o_ausente_es_invalido(invalido):
     codigo = codigo_de_error(validar_item, invalido)
 
     assert codigo == "TALLE_INVALIDO"
+
+
+@pytest.mark.parametrize(
+    "cantidad, esperado",
+    [
+        (1, Decimal("11999.50")),
+        (10, Decimal("119995.00")),
+    ],
+)
+def test_las_cantidades_1_y_10_son_validas(cantidad, esperado):
+    carrito = [item("remera", "M", cantidad)]
+
+    subtotal = calcular_subtotal(carrito)
+
+    assert subtotal == esperado
